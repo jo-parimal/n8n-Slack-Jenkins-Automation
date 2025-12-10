@@ -1,0 +1,170 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "C0A1B3TU0RZ",
+          "mode": "list",
+          "cachedResultName": "devops"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        -144
+      ],
+      "id": "854e4a5a-cee8-4fee-bf6d-2f315864eeac",
+      "name": "Slack Trigger",
+      "webhookId": "4cb71c3d-903f-4bf5-aead-749f5792a131",
+      "credentials": {
+        "slackApi": {
+          "id": "rArtWQmSqAbb9cyp",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract Slack text\nlet rawText = $json.text ? $json.text.trim() : \"\";\n\n// Remove leading Slack mentions like <@U0A1EBWG5M3>\nrawText = rawText.replace(/<@[^>]+>/g, \"\").trim();\n\nconst text = rawText;\n\n// SERVICE → word after \"build\"\nlet svcMatch = text.match(/build\\s+([A-Za-z0-9_\\-]+)/i);\nlet service = svcMatch ? svcMatch[1] : null;\n\n// BRANCH → anything after service and before \"in\"\nlet branchMatch = text.match(/build\\s+[A-Za-z0-9_\\-]+\\s+([A-Za-z0-9_\\-]+)\\s+in/i);\nlet branchName = branchMatch ? branchMatch[1] : null;\n\n// ENVIRONMENT\nlet envMatch = text.match(/\\b(dev|development|stage|staging|mock|uat|prod|production)\\b/i);\nlet environment = envMatch ? envMatch[1].toLowerCase() : null;\n\nconst envMap = {\n  development: \"dev\",\n  dev: \"dev\",\n  stage: \"stage\",\n  staging: \"stage\",\n  mock: \"mock\",\n  uat: \"uat\",\n  production: \"prod\",\n  prod: \"prod\"\n};\n\nif (environment && envMap[environment]) environment = envMap[environment];\n\nreturn {\n  json: {\n    rawMessage: rawText,\n    service,\n    branchName,\n    environment\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -144
+      ],
+      "id": "a2146522-3449-47db-b6b9-1cb229c91723",
+      "name": "Parser of Slack Message"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.service}}",
+                    "rightValue": "crudops",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d178412b-5bef-4990-82da-42c6ddf6f44d"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -528,
+        -144
+      ],
+      "id": "e6cca4d5-49d3-4ea8-8da4-b1d32a8f1dc1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://3.95.59.63:8080/job/crudops/buildWithParameters",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Environment",
+              "value": "={{$json.environment}}"
+            },
+            {
+              "name": "BranchName",
+              "value": "={{$json.branchName}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -320,
+        -240
+      ],
+      "id": "8faf7f4b-4f8c-48f4-a282-44955d8bc4c7",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "EaTGkW3Kp6ySkcc6",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parser of Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser of Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "33e58019-2339-47f9-b772-719df18c3f43",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "596a3aed7e71126b88b906707701c63297a28504b52b9a002282307b3c997d25"
+  },
+  "id": "98BkNAMs91r9oThK",
+  "tags": []
+}
