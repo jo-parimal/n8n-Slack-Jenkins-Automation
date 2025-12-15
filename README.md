@@ -1,3 +1,16 @@
+
+Trigger Jenkins builds from Slack commands automatically  
+(no plugins, no extra backend — just n8n)  
+
+⭐ Highlights
+✔ Converts Slack build commands to Jenkins jobs  
+✔ Easily customize environments & branches  
+✔ Works self-hosted with just n8n
+
+
+
+
+
 # n8n-Slack-Jenkins-Automation
 
 1. Workflow Node Overview
